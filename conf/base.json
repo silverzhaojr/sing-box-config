@@ -1,0 +1,352 @@
+{
+  "log": {
+    "level": "info",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "type": "udp",
+        "tag": "dns_direct",
+        "server": "127.0.0.1"
+      },
+      {
+        "type": "https",
+        "tag": "dns_proxy",
+        "server": "8.8.8.8",
+        "detour": "🚀 节点选择"
+      },
+      {
+        "type": "fakeip",
+        "tag": "dns_fakeip",
+        "inet4_range": "198.18.0.0/15"
+      }
+    ],
+    "rules": [
+      {
+        "rule_set": [
+          "my-direct",
+          "geosite-googlefcm"
+        ],
+        "action": "route",
+        "server": "dns_direct"
+      },
+      {
+        "rule_set": [
+          "my-proxy",
+          "geosite-imgur",
+          "geosite-category-media",
+          "geosite-docker",
+          "geosite-google",
+          "geosite-telegram",
+          "geosite-youtube"
+        ],
+        "action": "route",
+        "server": "dns_fakeip"
+      },
+      {
+        "action": "evaluate",
+        "server": "dns_direct"
+      },
+      {
+        "match_response": true,
+        "rule_set": "geoip-cn",
+        "action": "respond"
+      },
+      {
+        "rule_set": [
+          "geosite-geolocation-!cn"
+        ],
+        "action": "route",
+        "server": "dns_fakeip"
+      },
+      {
+        "query_type": "AAAA",
+        "action": "predefined"
+      },
+      {
+        "action": "route",
+        "server": "dns_proxy",
+        "client_subnet": "210.22.70.225"
+      }
+    ],
+    "reverse_mapping": true
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "proxy-in",
+      "listen": "::",
+      "listen_port": 20170
+    },
+    {
+      "type": "direct",
+      "tag": "dns-in",
+      "listen": "::",
+      "listen_port": 1053
+    },
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "::",
+      "listen_port": 7890
+    },
+    {
+      "type": "redirect",
+      "tag": "redirect-in",
+      "listen": "::",
+      "listen_port": 7892
+    },
+    {
+      "type": "tproxy",
+      "tag": "tproxy-in",
+      "listen": "::",
+      "listen_port": 7893
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "DIRECT"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "inbound": "dns-in",
+        "action": "hijack-dns"
+      },
+      {
+        "action": "sniff"
+      },
+      {
+        "inbound": "proxy-in",
+        "outbound": "❄️ 代理节点"
+      },
+      {
+        "clash_mode": "Global",
+        "outbound": "🚀 节点选择"
+      },
+      {
+        "clash_mode": "Direct",
+        "outbound": "DIRECT"
+      },
+      {
+        "rule_set": "my-direct",
+        "outbound": "DIRECT"
+      },
+      {
+        "rule_set": "my-block",
+        "action": "reject"
+      },
+      {
+        "rule_set": "geoip-telegram",
+        "ip_version": 6,
+        "action": "reject"
+      },
+      {
+        "rule_set": "my-proxy",
+        "outbound": "🚀 节点选择"
+      },
+      {
+        "rule_set": [
+          "geoip-cn"
+        ],
+        "outbound": "DIRECT"
+      },
+      {
+        "rule_set": [
+          "geosite-telegram",
+          "geoip-telegram"
+        ],
+        "outbound": "📲 电报消息"
+      },
+      {
+        "rule_set": [
+          "geosite-category-media",
+          "geosite-imgur",
+          "geosite-youtube"
+        ],
+        "outbound": "🌍 国外媒体"
+      },
+      {
+        "rule_set": [
+          "geosite-google",
+          "geoip-google"
+        ],
+        "outbound": "🌀 谷歌网站"
+      },
+      {
+        "rule_set": [
+          "geosite-geolocation-!cn"
+        ],
+        "outbound": "🚀 节点选择"
+      },
+      {
+        "rule_set": [
+          "geosite-docker",
+          "geoip-cloudflare",
+          "geoip-cloudfront"
+        ],
+        "outbound": "🚀 节点选择"
+      }
+    ],
+    "rule_set": [
+      {
+        "type": "remote",
+        "tag": "geoip-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-telegram",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-telegram.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-telegram",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/srs/telegram.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-category-media",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-porn.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-docker",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-docker.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-imgur",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-imgur.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-youtube",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-youtube.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-googlefcm",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-googlefcm.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-google",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-google.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-google",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/srs/google.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-geolocation-!cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs",
+        "update_interval": "168h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-cloudflare",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/srs/cloudflare.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-cloudfront",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/srs/cloudfront.srs",
+        "update_interval": "720h0m0s"
+      },
+      {
+        "type": "inline",
+        "tag": "my-direct",
+        "rules": [
+          {
+            "domain_suffix": [
+              "lan",
+              "googleads.g.doubleclick.net",
+              "zoom.us"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "inline",
+        "tag": "my-proxy",
+        "rules": [
+          {
+            "domain_suffix": [
+              "112114.xyz",
+              "catbox.moe",
+              "qiyiguo.uk",
+              "community.oneplus.com",
+              "xiaomi.eu",
+              "xn--4gq62f52gdss.ink",
+              "xn--7kq24s4ynvb.site"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "inline",
+        "tag": "my-block",
+        "rules": [
+          {
+            "domain_suffix": [
+              "applovin.com",
+              "applvn.com",
+              "in.appcenter.ms"
+            ]
+          }
+        ]
+      }
+    ],
+    "final": "DIRECT",
+    "default_mark": 7894,
+    "default_domain_resolver": "dns_direct",
+    "default_http_client": "http_proxy"
+  },
+  "http_clients": [
+    {
+      "tag": "http_proxy",
+      "detour": "🚀 节点选择"
+    }
+  ],
+  "experimental": {
+    "cache_file": {
+      "enabled": true,
+      "path": "/tmp/cache.db",
+      "store_fakeip": true
+    },
+    "clash_api": {
+      "external_controller": "0.0.0.0:9999",
+      "external_ui": "ui"
+    }
+  }
+}

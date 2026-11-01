@@ -1,0 +1,152 @@
+# Subscriptions and proxy groups for sub2sb.py.
+# Regexes use Python syntax and are matched against node names anywhere in the name;
+# write them as single-quoted TOML strings so backslashes need no escaping.
+#
+# Output / dashboard order of groups follows the [[groups]] order below. The generated
+# subscription and country groups are appended last by default; to place them elsewhere,
+# add a marker entry { expand = "{subscriptions}" } or { expand = "{countries}" } at the
+# wanted position (see the markers near the end). Subscription groups keep the order of
+# [[subscriptions]]; country groups keep the order of [[countries]].
+
+# [urltest]: defaults for every urltest group (including subscription and country groups);
+# a group's own fields win. Any sing-box urltest field works here:
+#   url                          test URL (sing-box default: https://www.gstatic.com/generate_204)
+#   interval                     test interval, e.g. "30s", "5m" (sing-box default: 3m)
+#   tolerance                    ms; only switch when the new node is this much faster (default: 50)
+#   idle_timeout                 stop testing after this long without traffic (default: 30m)
+#   interrupt_exist_connections  true/false; close connections when the selected node changes
+[urltest]
+url = "http://www.gstatic.com/generate_204"
+interval = "5m"
+tolerance = 50
+
+# [[subscriptions]]: one entry per provider.
+#   name              required; unique, used by a group's subscription field
+#   url               required; http(s) URL, or "env:VAR_NAME" to read it from an environment variable
+#   exclude           regex; drop nodes whose name matches (info nodes like 剩余流量)
+#   group             tag of a urltest group holding all of this subscription's nodes;
+#                     listed by "{subscriptions}". Omit to create no group
+#   udp               true (default) / false; false sets network = "tcp" on every node
+#   skip_cert_verify  false (default) / true; true sets tls.insecure on every node
+#   user_agent        default "sing-box 1.14.4", which makes most panels return sing-box JSON
+#                     (keeps certificate pins); others return share links, which are parsed too
+[[subscriptions]]
+name = "亏本机场"
+url = "env:SUB_KUIBEN"
+exclude = '剩余流量|套餐到期|距离下次重置|过期时间|官网'
+group = "✈️ 亏本机场"
+
+# [[subscriptions]]
+# name = "一元机场"
+# url = "env:SUB_YIYUAN"
+# group = "✈️ 一元机场"
+
+# [[countries]]: country groups, in this order. "{countries}" expands to the ones that
+# matched at least one node; countries with no match are skipped.
+# Same fields as [[groups]] below, except type defaults to "urltest" and filter is required.
+# (?<![A-Za-z])XX(?![A-Za-z]) matches a standalone code, so "US" doesn't hit "RUS" or "AUS".
+
+[[countries]]
+tag = "🇭🇰 香港"
+filter = '香港|(?<![A-Za-z])HK(?![A-Za-z])|Hong ?Kong'
+
+# [[countries]]
+# tag = "🇹🇼 台湾"
+# filter = '台湾|台北|(?<![A-Za-z])TW(?![A-Za-z])|Taiwan'
+
+[[countries]]
+tag = "🇯🇵 日本"
+filter = '日本|东京|大阪|(?<![A-Za-z])JP(?![A-Za-z])|Japan|Tokyo|Osaka'
+
+[[countries]]
+tag = "🇸🇬 新加坡"
+filter = '新加坡|狮城|(?<![A-Za-z])SG(?![A-Za-z])|Singapore'
+
+[[countries]]
+tag = "🇺🇸 美国"
+filter = '美国|洛杉矶|圣何塞|硅谷|西雅图|(?<![A-Za-z])USA?(?![A-Za-z])|United States'
+tolerance = 150
+
+# [[outbounds]]: extra sing-box outbounds written verbatim before the nodes (none needed now
+# that DIRECT lives in base.json; add entries here only for extra static outbounds).
+
+# [[groups]]: predefined groups, written in this order.
+#   type          required; "selector" (pick by hand in the dashboard) or "urltest" (fastest node)
+#   tag           required; group name, referenced by base.json and other groups
+#   outbounds     list of outbound/group tags, kept in order; the first is the selector default.
+#                 "{subscriptions}" expands to all subscription groups,
+#                 "{countries}" to all country groups that matched nodes
+#   filter        regex; append nodes whose name matches ('.*' = all nodes)
+#   exclude       regex; drop matching nodes picked by filter/subscription
+#   subscription  subscription name or list of names; append only nodes from them
+#   expand        on its own, a marker that outputs the generated groups here instead of at the end;
+#                 value is "{subscriptions}" or "{countries}" (see markers below)
+# Any other sing-box field is copied through, e.g. default and interrupt_exist_connections
+# for selectors, or the [urltest] fields for urltest groups.
+# A group that ends up empty warns and falls back to DIRECT.
+[[groups]]
+type = "selector"
+tag = "🚀 节点选择"
+outbounds = ["♻️ 自动选择", "{subscriptions}", "{countries}", "📺 省流节点", "🌤️ 手动切换"]
+
+# Used by the proxy-in inbound; follows 🚀 节点选择 unless switched.
+[[groups]]
+type = "selector"
+tag = "❄️ 代理节点"
+outbounds = ["🚀 节点选择", "♻️ 自动选择", "{subscriptions}", "{countries}", "📺 省流节点", "🌤️ 手动切换"]
+
+[[groups]]
+type = "urltest"
+tag = "📺 省流节点"
+filter = '(?<![0-9])0\.[0-5]|低倍率|省流'
+
+[[groups]]
+type = "urltest"
+tag = "♻️ 自动选择"
+filter = '.*'
+
+[[groups]]
+type = "selector"
+tag = "🌤️ 手动切换"
+filter = '.*'
+
+[[groups]]
+type = "selector"
+tag = "📲 电报消息"
+outbounds = ["🚀 节点选择", "♻️ 自动选择", "{subscriptions}", "{countries}", "📺 省流节点", "🌤️ 手动切换"]
+
+[[groups]]
+type = "selector"
+tag = "🌍 国外媒体"
+outbounds = ["🚀 节点选择", "♻️ 自动选择", "{subscriptions}", "{countries}", "📺 省流节点", "🌤️ 手动切换"]
+
+[[groups]]
+type = "selector"
+tag = "🌀 谷歌网站"
+outbounds = ["🚀 节点选择", "♻️ 自动选择", "{subscriptions}", "{countries}", "📺 省流节点", "🌤️ 手动切换"]
+
+[[groups]]
+expand = "{subscriptions}"
+
+[[groups]]
+expand = "{countries}"
+
+# A user-defined GLOBAL overrides sing-box's auto-generated one (which would force route.final
+# first). metacubexd orders the Proxies page by each group's position in GLOBAL.all, so list every
+# group here in the order you want them shown; filter '.*' also appends all nodes for Global mode.
+[[groups]]
+type = "selector"
+tag = "GLOBAL"
+outbounds = [
+    "🚀 节点选择",
+    "❄️ 代理节点",
+    "♻️ 自动选择",
+    "📺 省流节点",
+    "{subscriptions}",
+    "🌤️ 手动切换",
+    "📲 电报消息",
+    "🌍 国外媒体",
+    "🌀 谷歌网站",
+    "{countries}",
+]
+
